@@ -44,18 +44,15 @@ public class BenchmarkController {
 				Benchmark entity = BenchmarkMapper.INSTANCE.toEntity(benchmarkDTO);
 				entity.setPrimaryMetricScore(benchmarkDTO.getPrimaryMetric().getScore());
 				entity.setPrimaryMetricScoreUnit(benchmarkDTO.getPrimaryMetric().getScoreUnit());
-				// entity.setParams(benchmarkDTO.getParams());
-				// entity.setPrimaryMetricRawData(benchmarkDTO.getPrimaryMetric().getRawData());
-
+				
 				// Save params as a string in db
 				if (benchmarkDTO.getParams() != null)
 					entity.setParam(mapToString(benchmarkDTO.getParams()));
 
-				Benchmark savedEntity = benchmarkRepository.save(entity);
-				lastRecordId = savedEntity.getId();
+				lastRecordId = benchmarkRepository.save(entity).getId();
 
 				// Save Benchmark raw data values in text file
-				String filePath = writeDataToFile("RawData-" + lastRecordId,
+				String filePath = writeDataToFile("Raw Data"+File.separator+"RawData-" + lastRecordId,
 						benchmarkDTO.getPrimaryMetric().getRawData().toString());
 
 				entity.setRawDataPath(filePath);
