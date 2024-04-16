@@ -1,6 +1,11 @@
 package com.jmhresults.controllers;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,37 +29,80 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BenchmarkController {
 
-    private final BenchmarkRepository benchmarkRepository;
+	private final BenchmarkRepository benchmarkRepository;
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadBenchmark(@RequestParam("file") MultipartFile file) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            BenchmarkDTO[] benchmarkDTOArray = objectMapper.readValue(file.getInputStream(), BenchmarkDTO[].class);
+	@PostMapping("/upload")
+	public ResponseEntity<String> uploadBenchmark(@RequestParam("file") MultipartFile file) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			BenchmarkDTO[] benchmarkDTOArray = objectMapper.readValue(file.getInputStream(), BenchmarkDTO[].class);
 
-            // Save each BenchmarkDTO to the database
-            for (BenchmarkDTO benchmarkDTO : benchmarkDTOArray) {
-                Benchmark entity = BenchmarkMapper.INSTANCE.toEntity(benchmarkDTO);
-                entity.setPrimaryMetricScore(benchmarkDTO.getPrimaryMetric().getScore());
-                entity.setPrimaryMetricScoreUnit(benchmarkDTO.getPrimaryMetric().getScoreUnit());
-                entity.setPrimaryMetricRawData(benchmarkDTO.getPrimaryMetric().getRawData());
+			Long lastRecordId = null; // Initialize variable to store last record ID
 
-                benchmarkRepository.save(entity);
-            }
-            return ResponseEntity.ok("Record inserted successfully");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+			// Save each BenchmarkDTO to the database
+			for (BenchmarkDTO benchmarkDTO : benchmarkDTOArray) {
+				Benchmark entity = BenchmarkMapper.INSTANCE.toEntity(benchmarkDTO);
+				entity.setPrimaryMetricScore(benchmarkDTO.getPrimaryMetric().getScore());
+				entity.setPrimaryMetricScoreUnit(benchmarkDTO.getPrimaryMetric().getScoreUnit());
+				// entity.setParams(benchmarkDTO.getParams());
+				// entity.setPrimaryMetricRawData(benchmarkDTO.getPrimaryMetric().getRawData());
 
-    @GetMapping("")
-    public ResponseEntity<List<Benchmark>> getBenchmarks() {
-        try {
-            return ResponseEntity.ok(benchmarkRepository.findAll());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+				// Save params as a string in db
+				if (benchmarkDTO.getParams() != null)
+					entity.setParam(mapToString(benchmarkDTO.getParams()));
+
+				Benchmark savedEntity = benchmarkRepository.save(entity);
+				lastRecordId = savedEntity.getId();
+
+				// Save Benchmark raw data values in text file
+				String filePath = writeDataToFile("RawData-" + lastRecordId,
+						benchmarkDTO.getPrimaryMetric().getRawData().toString());
+
+				entity.setRawDataPath(filePath);
+			}
+			return ResponseEntity.ok("Record inserted successfully");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	@GetMapping("")
+	public ResponseEntity<List<Benchmark>> getBenchmarks() {
+		try {
+			return ResponseEntity.ok(benchmarkRepository.findAll());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	private static String writeDataToFile(String fileName, String data) {
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+			writer.write(data);
+
+			File file = new File(fileName);
+			String absoluteFilePath = file.getAbsolutePath();
+
+			return absoluteFilePath;
+		} catch (IOException e) {
+			System.err.println("Error writing data to file: " + e.getMessage());
+			return "File not created";
+		}
+	}
+
+	public static String mapToString(Map<String, String> map) {
+		StringBuilder stringBuilder = new StringBuilder();
+
+		for (Map.Entry<String, String> entry : map.entrySet()) {
+			stringBuilder.append(entry.getKey()).append("=").append(entry.getValue()).append(", ");
+		}
+
+		// Remove the trailing comma and space
+		if (stringBuilder.length() > 0) {
+			stringBuilder.setLength(stringBuilder.length() - 2);
+		}
+
+		return stringBuilder.toString();
+	}
 }

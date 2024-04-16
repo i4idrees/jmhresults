@@ -11,7 +11,6 @@ import com.jmhresults.models.BenchmarkDTO;
 public interface BenchmarkMapper {
     BenchmarkMapper INSTANCE = Mappers.getMapper(BenchmarkMapper.class);
 
-    
     Benchmark toEntity(BenchmarkDTO benchmarkDTO);
 
     

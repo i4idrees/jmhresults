@@ -9,7 +9,6 @@ import lombok.Setter;
 @Setter
 @Getter
 
-
 public class BenchmarkDTO {
 	private String jmhVersion;
     private String benchmark;
@@ -28,6 +27,8 @@ public class BenchmarkDTO {
     private String measurementTime;
     private int measurementBatchSize;
     private Map<String, String> params;
+    private String param;
+    //private String params;
     private PrimaryMetricDTO primaryMetric;
     private Map<String, Object> secondaryMetrics;
 }

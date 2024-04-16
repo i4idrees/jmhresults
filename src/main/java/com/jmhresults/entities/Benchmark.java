@@ -1,8 +1,5 @@
 package com.jmhresults.entities;
 
-import java.util.List;
-
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -38,9 +35,14 @@ public class Benchmark {
     private int measurementBatchSize;
     private double primaryMetricScore;
     private String primaryMetricScoreUnit;
+    private String rawDataPath;
+    private String param;
     
-    @ElementCollection
-    private List<List<Double>> primaryMetricRawData;
+    //private String params;
+    
+        
+    //@ElementCollection
+    //private List<List<Double>> primaryMetricRawData;
 
 }
 
